@@ -1,0 +1,36 @@
+[project]
+name = "memento"
+version = "0.1.0"
+description = "Photo album generation service that uses OpenAI models to generate a ghibli-fied version of the photo"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Ajay Bhargava", email = "bhargava.ajay@gmail.com" }
+]
+dependencies = [
+    "convex>=0.7.0",
+    "fastapi>=0.115.12",
+    "modal>=1.0.2",
+    "pydantic>=2.11.5",
+    "pytest",
+    "python-dotenv>=1.1.0",
+    "uvicorn>=0.27.0",
+]
+
+[build-system]
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["memento"]
+package-dir = {"memento" = "src/memento"}
+
+[tool.ruff]
+src = ["src"]
+line-length = 100
+select = ["E", "F", "B", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["__test__"]
+addopts = "-ra -q"
