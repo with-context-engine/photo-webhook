@@ -25,7 +25,9 @@ export const storeMessage = mutation({
             attachmentId: v.string(),
             type: v.string(),
             url: v.string(),
+            classification: v.optional(v.string()),
         })),
+
     },
     handler: async (ctx, args) => {
         // Store the main message
@@ -52,6 +54,7 @@ export const storeMessage = mutation({
                 attachmentId: attachment.attachmentId,
                 type: attachment.type,
                 url: attachment.url,
+                classification: attachment.classification,
                 createdAt: Date.now(),
             });
             attachmentIds.push(attachmentDocId);

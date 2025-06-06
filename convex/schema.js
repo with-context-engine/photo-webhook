@@ -36,8 +36,25 @@ export default defineSchema({
         type: v.string(),
         url: v.string(),
 
+        // Classification
+        classification: v.optional(v.string()),
+
         // Timestamps
         createdAt: v.number(),
     }).index("by_message_id", ["messageId"])
         .index("by_convex_message_id", ["convexMessageId"]),
+
+    conversions: defineTable({
+        // Link to message
+        messageId: v.id("messages"), // Reference to our messages table
+        convexMessageId: v.id("messages"), // Reference to our messages table
+
+        // Conversion data
+        signedUrl: v.string(), // After Image Generation, Signed URL following upload to S3
+        s3Key: v.string(), // After Image Generation, S3 Key following upload to S3
+        
+        // Timestamps
+        createdAt: v.number(),
+    }).index("by_message_id", ["messageId"])
+        .index("by_convex_message_id", ["convexMessageId"])
 }); 

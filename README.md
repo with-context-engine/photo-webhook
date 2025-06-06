@@ -63,8 +63,10 @@ https://your-workspace--memento-surge-webhooks-webhook-application-dev.modal.run
 - Use the health check endpoint for uptime monitoring
 - Monitor function calls and performance metrics
 
-## Next Steps
+## To DO
 
-- Implement the `store_message_in_convex()` function
-- Add more webhook event types as needed
-- Set up monitoring and alerting 
+
+- [ ] Add Convex database integration for classification
+- [ ] Add S3 storage for conversions by `ConvexMessageId`
+- [ ] Add OpenAI conversion
+- [ ] Add Webhook Validation
