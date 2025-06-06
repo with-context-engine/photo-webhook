@@ -2,11 +2,6 @@ class Message {
     message string
 }
 
-class MessageWithImage {
-    message string?
-    image_urls string[]
-}
-
 enum Category {
     Simpsons
     Ghibli
@@ -15,20 +10,10 @@ enum Category {
     YayoiKusama
 }
 
-function ConvertMessage(message: Message) -> Category {
-    client "openai/gpt-4o"
-    prompt #"
-        Classify the following message into a category:
-        {{ _.role("user") }} {{ message.message }}
-        
-        {{ ctx.output_format }}
-    "#
-}
-
-function ClassifyMessageWithMedia(input: MessageWithImage) -> Category {
+function ConvertMessage(input: Message) -> Category {
     client CustomGPT4o
     prompt #"
-        Classify the following message and/or image(s) into one of these categories:
+        Convert the following message into one of these categories:
         - Simpsons: Content related to The Simpsons TV show
         - Ghibli: Content related to Studio Ghibli movies/style
         - ToyStory: Content related to Toy Story movies
@@ -38,14 +23,8 @@ function ClassifyMessageWithMedia(input: MessageWithImage) -> Category {
         {% if input.message %}
         Text message: {{ input.message }}
         {% endif %}
-        
-        {% if input.image_urls %}
-        {% for image_url in input.image_urls %}
-        ![Image {{ loop.index }}]({{ image_url }})
-        {% endfor %}
-        {% endif %}
-        
-        Analyze both the text (if provided) and images (if provided) to determine which category best fits the content.
+
+        Analyze the text (if provided) to determine which category best fits the content.
         
         {{ ctx.output_format }}
     "#
@@ -54,20 +33,8 @@ function ClassifyMessageWithMedia(input: MessageWithImage) -> Category {
 test ConvertMessage {
     functions [ConvertMessage]
     args {
-        message {
-            message #"
-                Can you convert this image into Studio Ghibli format? 
-            "#
-        }
-    }
-}
-
-test ClassifyMessageWithMedia {
-    functions [ClassifyMessageWithMedia]
-    args {
         input {
             message "Can you convert this image into Studio Ghibli format?"
-            image_urls ["https://example.com/image.jpg"]
         }
     }
 }

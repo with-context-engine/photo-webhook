@@ -22,7 +22,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(_TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["Message","MessageWithImage",]
+          ["Message",]
         ), enums=set(
           ["Category",]
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,10 +31,6 @@ class TypeBuilder(_TypeBuilder):
     @property
     def Message(self) -> "MessageAst":
         return MessageAst(self)
-
-    @property
-    def MessageWithImage(self) -> "MessageWithImageAst":
-        return MessageWithImageAst(self)
 
 
 
@@ -75,48 +71,6 @@ class MessageProperties:
     @property
     def message(self) -> ClassPropertyViewer:
         return ClassPropertyViewer(self.__bldr.property("message"))
-
-    
-
-class MessageWithImageAst:
-    def __init__(self, tb: _TypeBuilder):
-        _tb = tb._tb # type: ignore (we know how to use this private attribute)
-        self._bldr = _tb.class_("MessageWithImage")
-        self._properties: typing.Set[str] = set([ "message",  "image_urls", ])
-        self._props = MessageWithImageProperties(self._bldr, self._properties)
-
-    def type(self) -> FieldType:
-        return self._bldr.field()
-
-    @property
-    def props(self) -> "MessageWithImageProperties":
-        return self._props
-
-
-class MessageWithImageViewer(MessageWithImageAst):
-    def __init__(self, tb: _TypeBuilder):
-        super().__init__(tb)
-
-    
-    def list_properties(self) -> typing.List[typing.Tuple[str, ClassPropertyViewer]]:
-        return [(name, ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
-
-
-
-class MessageWithImageProperties:
-    def __init__(self, bldr: ClassBuilder, properties: typing.Set[str]):
-        self.__bldr = bldr
-        self.__properties = properties
-
-    
-
-    @property
-    def message(self) -> ClassPropertyViewer:
-        return ClassPropertyViewer(self.__bldr.property("message"))
-
-    @property
-    def image_urls(self) -> ClassPropertyViewer:
-        return ClassPropertyViewer(self.__bldr.property("image_urls"))
 
     
 

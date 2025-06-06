@@ -1,9 +1,9 @@
 from memento.types.types import MessageData
 import os
 from convex import ConvexClient
+from typing import Optional
 
-
-async def store_message_in_convex(message_data: MessageData, account_id: str):
+async def store_message_in_convex(message_data: MessageData, account_id: str, classification: Optional[str] = None):
     """
     Store message data in Convex database using the storeMessage mutation.
     """
@@ -21,6 +21,7 @@ async def store_message_in_convex(message_data: MessageData, account_id: str):
             "attachmentId": attachment.id,
             "type": attachment.type,
             "url": attachment.url,
+            "classification": classification,
         })
     
     # Prepare the arguments for the Convex mutation (simplified to match expected format)

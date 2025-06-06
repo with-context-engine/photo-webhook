@@ -65,7 +65,8 @@ https://your-workspace--memento-surge-webhooks-webhook-application-dev.modal.run
 
 ## To DO
 
-- [ ] Add Webhook Validation
+
 - [ ] Add Convex database integration for classification
 - [ ] Add S3 storage for conversions by `ConvexMessageId`
 - [ ] Add OpenAI conversion
+- [ ] Add Webhook Validation

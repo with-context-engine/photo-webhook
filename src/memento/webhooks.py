@@ -1,5 +1,9 @@
 import modal
 from typing import Dict, Any, Optional, List
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
 ###
 # Constants
@@ -20,6 +24,7 @@ webhook_image = (
         "python-dotenv>=1.1.0",
         "convex>=0.7.0",
         "baml-py>=0.89.0",
+        "rich"
     )
     .add_local_python_source("memento")
     .add_local_dir("baml_client", "/root/baml_client")
@@ -88,51 +93,60 @@ def webhook_application():
             if webhook_payload.type == "message.received":
                 message_data = webhook_payload.data
                 
-                # Print message received confirmation
-                print("=" * 50)
-                print("MESSAGE RECEIVED")
-                print("=" * 50)
-                print(f"From: {message_data.conversation.contact.first_name} {message_data.conversation.contact.last_name}")
-                print(f"Phone: {message_data.conversation.contact.phone_number}")
-                print(f"Message: {message_data.body}")
-                print(f"Received at: {message_data.received_at}")
+                # Create Rich console
+                console = Console()
                 
+                # Create message info table
+                message_table = Table(show_header=False, box=None)
+                message_table.add_row("From", f"{message_data.conversation.contact.first_name} {message_data.conversation.contact.last_name}")
+                message_table.add_row("Phone", message_data.conversation.contact.phone_number)
+                message_table.add_row("Message", message_data.body)
+                message_table.add_row("Received at", message_data.received_at)
+                
+                # Create attachments table if there are any
                 if message_data.attachments:
-                    print(f"Attachments: {len(message_data.attachments)}")
+                    attachments_table = Table(show_header=True, header_style="bold magenta")
+                    attachments_table.add_column("Type")
+                    attachments_table.add_column("URL")
                     for attachment in message_data.attachments:
-                        print(f"  - {attachment.type}: {attachment.url}")
+                        attachments_table.add_row(attachment.type, attachment.url)
+                else:
+                    attachments_table = None
                 
-                print("=" * 50)
+                # Print message received panel
+                console.print(Panel(
+                    message_table,
+                    title="[bold blue]MESSAGE RECEIVED[/]",
+                    border_style="blue"
+                ))
                 
-                # Classify the message using BAML
-                try:
-                    # Extract image URLs from attachments (only image types)
-                    image_urls = [
-                        attachment.url 
-                        for attachment in message_data.attachments 
-                        if attachment.type.startswith('image')
-                    ]
-                    
-                    # Classify the message
-                    category = await classify_message_with_media(
-                        message_body=message_data.body,
-                        attachment_urls=image_urls if image_urls else None
-                    )
-                    
-                    print(f"CLASSIFICATION: {category}")
-                    print("=" * 50)
-                    
-                except Exception as classification_error:
-                    print(f"Error classifying message: {classification_error}")
-                    category = None
+                # Print attachments if any
+                if message_data.attachments and attachments_table:
+                    console.print(Panel(
+                        attachments_table,
+                        title="[bold magenta]ATTACHMENTS[/]",
+                        border_style="magenta"
+                    ))
+                else:
+                    console.print(Panel(
+                        Text("No attachments", style="bold red"),
+                        title="[bold red]NO ATTACHMENTS[/]",
+                        border_style="red"
+                    ))
+
+                # Classify the message and its attachments
+                classification = await classify_message_and_attachments(
+                    message_body=message_data.body or "",
+                    attachments=message_data.attachments,
+                    console=console
+                )
                 
                 # Store message in Convex database
                 try:
-                    convex_result = await store_message_in_convex(message_data, webhook_payload.account_id)
+                    convex_result = await store_message_in_convex(message_data, webhook_payload.account_id, classification)
                     print(f"Successfully stored message in Convex: {convex_result}")
                 except Exception as convex_error:
                     print(f"Error storing message in Convex: {convex_error}")
-                    # Continue processing even if Convex storage fails
                 
                 return JSONResponse(
                     status_code=200,
@@ -153,4 +167,51 @@ def webhook_application():
             raise HTTPException(status_code=500, detail="Internal server error")
 
     return web_app
+
+async def classify_message_and_attachments(
+    message_body: str,
+    attachments: List[Any],
+    console: Console
+) -> str:
+    """
+    Classify a message and its attachments, handling any errors gracefully.
+    
+    Args:
+        message_body: The text content of the message
+        attachments: List of message attachments
+        console: Rich console instance for logging
+        
+    Returns:
+        str: The classification category (either from classification or fallback "Ghibli")
+    """
+    category = None
+    try:
+        category = await classify_message_with_media(
+            message_body=message_body or ""
+        )
+        for attachment in attachments:
+            if attachment.type.startswith('image'):
+                attachment.classification = category
+            else:
+                attachment.classification = "Ghibli"
+
+        # Print classification result for all images
+        if any(a.type.startswith('image') for a in attachments):
+            classifications = [
+                f"{a.url}: {category}" for a in attachments if a.type.startswith('image')
+            ]
+            console.print(Panel(
+                Text("\n".join(classifications), style="bold green"),
+                title="[bold green]IMAGE CLASSIFICATIONS[/]",
+                border_style="green"
+            ))
+    except Exception as classification_error:
+        category = "Ghibli"  # Fallback if classification fails
+        console.print(Panel(
+            Text(f"Error classifying message: {classification_error}", style="bold red"),
+            title="[bold red]CLASSIFICATION ERROR[/]",
+            border_style="red"
+        ))
+    
+    return category
 

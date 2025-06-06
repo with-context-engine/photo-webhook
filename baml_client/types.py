@@ -51,7 +51,3 @@ class Category(str, Enum):
 
 class Message(BaseModel):
     message: str
-
-class MessageWithImage(BaseModel):
-    message: Optional[str] = None
-    image_urls: List[str]

@@ -1,37 +1,82 @@
 """
 Agent module for classifying messages using BAML.
 """
-from typing import List, Optional
 from baml_client.async_client import b as async_b  # Async client
-from baml_client.types import MessageWithImage, Category
-
+from baml_client.types import Message, Category
+from typing import List, Any
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 async def classify_message_with_media(
-    message_body: Optional[str] = None,
-    attachment_urls: Optional[List[str]] = None
+    message_body: str
 ) -> Category:
     """
     Classify a message with optional text and images using BAML.
     
     Args:
         message_body: Optional text content of the message
-        attachment_urls: Optional list of image URLs from attachments
         
     Returns:
         Category: The classified category of the message
     """
     # Prepare the input for BAML
-    message_input = MessageWithImage(
+    message_input = Message(
         message=message_body,
-        image_urls=attachment_urls or []
     )
     
     # Call the BAML function to classify the message
     try:
-        category = await async_b.ClassifyMessageWithMedia(message_input)
-        print(f"Message classified as: {category}")
+        category = await async_b.ConvertMessage(message_input)
         return category
     except Exception as e:
         print(f"Error classifying message: {e}")
         # Default to a fallback category if classification fails
         return Category.Ghibli
+
+async def classify_message_and_attachments(
+    message_body: str,
+    attachments: List[Any],
+    console: Console
+) -> str:
+    """
+    Classify a message and its attachments, handling any errors gracefully.
+    
+    Args:
+        message_body: The text content of the message
+        attachments: List of message attachments
+        console: Rich console instance for logging
+        
+    Returns:
+        str: The classification category (either from classification or fallback "Ghibli")
+    """
+    category = None
+    try:
+        category = await classify_message_with_media(
+            message_body=message_body or ""
+        )
+        for attachment in attachments:
+            if attachment.type.startswith('image'):
+                attachment.classification = category
+            else:
+                attachment.classification = "Ghibli"
+
+        # Print classification result for all images
+        if any(a.type.startswith('image') for a in attachments):
+            classifications = [
+                f"{a.url}: {category}" for a in attachments if a.type.startswith('image')
+            ]
+            console.print(Panel(
+                Text("\n".join(classifications), style="bold green"),
+                title="[bold green]IMAGE CLASSIFICATIONS[/]",
+                border_style="green"
+            ))
+    except Exception as classification_error:
+        category = "Ghibli"  # Fallback if classification fails
+        console.print(Panel(
+            Text(f"Error classifying message: {classification_error}", style="bold red"),
+            title="[bold red]CLASSIFICATION ERROR[/]",
+            border_style="red"
+        ))
+    
+    return category

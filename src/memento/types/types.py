@@ -13,6 +13,7 @@ class Attachment(BaseModel):
     id: str
     type: str
     url: str
+    classification: Optional[str] = None
 
 class Contact(BaseModel):
     id: str

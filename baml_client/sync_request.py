@@ -37,32 +37,9 @@ class HttpRequest:
       self.__ctx_manager = ctx_manager
 
     
-    def ClassifyMessageWithMedia(
-        self,
-        input: types.MessageWithImage,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return self.__runtime.build_request_sync(
-        "ClassifyMessageWithMedia",
-        {
-          "input": input,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
     def ConvertMessage(
         self,
-        message: types.Message,
+        input: types.Message,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -75,7 +52,7 @@ class HttpRequest:
       return self.__runtime.build_request_sync(
         "ConvertMessage",
         {
-          "message": message,
+          "input": input,
         },
         self.__ctx_manager.get(),
         tb,
@@ -94,32 +71,9 @@ class HttpStreamRequest:
       self.__ctx_manager = ctx_manager
 
     
-    def ClassifyMessageWithMedia(
-        self,
-        input: types.MessageWithImage,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return self.__runtime.build_request_sync(
-        "ClassifyMessageWithMedia",
-        {
-          "input": input,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
     def ConvertMessage(
         self,
-        message: types.Message,
+        input: types.Message,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -132,7 +86,7 @@ class HttpStreamRequest:
       return self.__runtime.build_request_sync(
         "ConvertMessage",
         {
-          "message": message,
+          "input": input,
         },
         self.__ctx_manager.get(),
         tb,

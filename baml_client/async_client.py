@@ -100,36 +100,9 @@ class BamlAsyncClient:
       return self.__llm_stream_parser
 
     
-    async def ClassifyMessageWithMedia(
-        self,
-        input: types.MessageWithImage,
-        baml_options: BamlCallOptions = {},
-    ) -> types.Category:
-      options: BamlCallOptions = {**self.__baml_options, **(baml_options or {})}
-
-      __tb__ = options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = options.get("client_registry", None)
-      collector = options.get("collector", None)
-      collectors = collector if isinstance(collector, list) else [collector] if collector is not None else []
-      raw = await self.__runtime.call_function(
-        "ClassifyMessageWithMedia",
-        {
-          "input": input,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        collectors,
-      )
-      return cast(types.Category, raw.cast_to(types, types, partial_types, False))
-    
     async def ConvertMessage(
         self,
-        message: types.Message,
+        input: types.Message,
         baml_options: BamlCallOptions = {},
     ) -> types.Category:
       options: BamlCallOptions = {**self.__baml_options, **(baml_options or {})}
@@ -145,7 +118,7 @@ class BamlAsyncClient:
       raw = await self.__runtime.call_function(
         "ConvertMessage",
         {
-          "message": message,
+          "input": input,
         },
         self.__ctx_manager.get(),
         tb,
@@ -166,42 +139,9 @@ class BamlStreamClient:
       self.__baml_options = baml_options or {}
 
     
-    def ClassifyMessageWithMedia(
-        self,
-        input: types.MessageWithImage,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.BamlStream[Optional[types.Category], types.Category]:
-      options: BamlCallOptions = {**self.__baml_options, **(baml_options or {})}
-      __tb__ = options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = options.get("client_registry", None)
-      collector = options.get("collector", None)
-      collectors = collector if isinstance(collector, list) else [collector] if collector is not None else []
-      raw = self.__runtime.stream_function(
-        "ClassifyMessageWithMedia",
-        {
-          "input": input,
-        },
-        None,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        collectors,
-      )
-
-      return baml_py.BamlStream[Optional[types.Category], types.Category](
-        raw,
-        lambda x: cast(Optional[types.Category], x.cast_to(types, types, partial_types, True)),
-        lambda x: cast(types.Category, x.cast_to(types, types, partial_types, False)),
-        self.__ctx_manager.get(),
-      )
-    
     def ConvertMessage(
         self,
-        message: types.Message,
+        input: types.Message,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[Optional[types.Category], types.Category]:
       options: BamlCallOptions = {**self.__baml_options, **(baml_options or {})}
@@ -216,7 +156,7 @@ class BamlStreamClient:
       raw = self.__runtime.stream_function(
         "ConvertMessage",
         {
-          "message": message,
+          "input": input,
         },
         None,
         self.__ctx_manager.get(),

@@ -39,7 +39,3 @@ class StreamState(BaseModel, Generic[T]):
 
 class Message(BaseModel):
     message: Optional[str] = None
-
-class MessageWithImage(BaseModel):
-    message: Optional[str] = None
-    image_urls: List[str]
