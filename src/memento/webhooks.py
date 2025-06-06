@@ -1,9 +1,5 @@
 import modal
-from typing import Dict, Any, Optional, List
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
 
 ###
 # Constants
@@ -71,6 +67,10 @@ def webhook_application():
         description="Webhook handler for Surge SMS messages"
     )
 
+    @web_app.get("/")
+    async def root():
+        return {"message": "Memento Surge Webhook Handler is running"}
+
     @web_app.post("/webhooks/surge")
     async def handle_surge_webhook(
         request: Request,
@@ -113,8 +113,12 @@ def webhook_application():
                     attachments=message_data.attachments,
                     console=console
                 )
+
+                # Future: Check if the user has credits or has made a payment to allow this action
+
+                # If the user has credits, allow the OpenAI API to convert the attachment to a new image mode and upload to Convex
                 
-                # Store message in Convex database
+                # Store message, original attachments, conversion from OpenAI, and classification in Convex
                 try:
                     convex_result = await store_message_in_convex(message_data, webhook_payload.account_id, classification)
                     print_convex_result_panel(console, convex_result)
