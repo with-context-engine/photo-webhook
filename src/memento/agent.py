@@ -5,8 +5,7 @@ from baml_client.async_client import b as async_b  # Async client
 from baml_client.types import Message, Category
 from typing import List, Any
 from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
+from memento.utils.logging import print_classification_panel, print_classification_error
 
 async def classify_message_with_media(
     message_body: str
@@ -66,17 +65,9 @@ async def classify_message_and_attachments(
             classifications = [
                 f"{a.url}: {category}" for a in attachments if a.type.startswith('image')
             ]
-            console.print(Panel(
-                Text("\n".join(classifications), style="bold green"),
-                title="[bold green]IMAGE CLASSIFICATIONS[/]",
-                border_style="green"
-            ))
+            print_classification_panel(console, classifications)
     except Exception as classification_error:
         category = "Ghibli"  # Fallback if classification fails
-        console.print(Panel(
-            Text(f"Error classifying message: {classification_error}", style="bold red"),
-            title="[bold red]CLASSIFICATION ERROR[/]",
-            border_style="red"
-        ))
+        print_classification_error(console, classification_error)
     
     return category
