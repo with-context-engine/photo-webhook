@@ -19,7 +19,11 @@ webhook_image = (
         "pydantic>=2.11.5", 
         "python-dotenv>=1.1.0",
         "convex>=0.7.0",
+        "baml-py>=0.89.0",
     )
+    .add_local_python_source("memento")
+    .add_local_dir("baml_client", "/root/baml_client")
+    .add_local_dir("baml_src", "/root/baml_src")
 )
 
 ###
@@ -27,60 +31,18 @@ webhook_image = (
 ###
 
 with webhook_image.imports():
-    import os
-    from datetime import datetime
     from dotenv import load_dotenv
     from fastapi import FastAPI, Request, HTTPException
     from fastapi.responses import JSONResponse
-    from pydantic import BaseModel, Field
-    from convex import ConvexClient
+    from memento.agent import classify_message_with_media
+    from memento.types.types import MessageReceivedPayload
+    from memento.utils.convex import store_message_in_convex
 
 ###
-# App
+# Modal App
 ###
 
 app = modal.App(name="memento-surge-webhooks")
-
-###
-# Pydantic Models
-###
-
-class Attachment(BaseModel):
-    id: str
-    type: str
-    url: str
-
-class Contact(BaseModel):
-    id: str
-    last_name: Optional[str] = None
-    first_name: Optional[str] = None
-    email: Optional[str] = None
-    phone_number: str
-    metadata: Dict[str, Any] = {}
-
-class PhoneNumber(BaseModel):
-    id: str
-    number: str
-    type: str
-
-class Conversation(BaseModel):
-    contact: Contact
-    id: str
-    phone_number: PhoneNumber
-
-class MessageData(BaseModel):
-    attachments: List[Attachment] = []
-    body: Optional[str] = None
-    conversation: Conversation
-    id: str
-    received_at: str
-
-class MessageReceivedPayload(BaseModel):
-    account_id: str
-    type: str = Field(..., pattern="^message\\.received$")
-    data: MessageData
-
-
 
 ###
 # FastAPI App
@@ -102,11 +64,6 @@ def webhook_application():
         version="0.1.0",
         description="Webhook handler for Surge SMS messages"
     )
-
-    @web_app.get("/")
-    async def health_check():
-        """Health check endpoint"""
-        return {"status": "healthy", "service": "memento-webhook-handler"}
 
     @web_app.post("/webhooks/surge")
     async def handle_surge_webhook(
@@ -147,6 +104,28 @@ def webhook_application():
                 
                 print("=" * 50)
                 
+                # Classify the message using BAML
+                try:
+                    # Extract image URLs from attachments (only image types)
+                    image_urls = [
+                        attachment.url 
+                        for attachment in message_data.attachments 
+                        if attachment.type.startswith('image')
+                    ]
+                    
+                    # Classify the message
+                    category = await classify_message_with_media(
+                        message_body=message_data.body,
+                        attachment_urls=image_urls if image_urls else None
+                    )
+                    
+                    print(f"CLASSIFICATION: {category}")
+                    print("=" * 50)
+                    
+                except Exception as classification_error:
+                    print(f"Error classifying message: {classification_error}")
+                    category = None
+                
                 # Store message in Convex database
                 try:
                     convex_result = await store_message_in_convex(message_data, webhook_payload.account_id)
@@ -175,42 +154,3 @@ def webhook_application():
 
     return web_app
 
-async def store_message_in_convex(message_data: MessageData, account_id: str):
-    """
-    Store message data in Convex database using the storeMessage mutation.
-    """
-    CONVEX_URL = os.getenv("CONVEX_URL")
-    
-    if not CONVEX_URL:
-        raise ValueError("CONVEX_URL is not set in secrets")
-        
-    client = ConvexClient(CONVEX_URL)
-    
-    # Prepare attachments data
-    attachments = []
-    for attachment in message_data.attachments:
-        attachments.append({
-            "attachmentId": attachment.id,
-            "type": attachment.type,
-            "url": attachment.url,
-        })
-    
-    # Prepare the arguments for the Convex mutation (simplified to match expected format)
-    mutation_args = {
-        "messageId": message_data.id,
-        "messageBody": message_data.body,
-        "accountId": account_id,
-        "receivedAt": message_data.received_at,
-        "contactId": message_data.conversation.contact.id,
-        "contactPhoneNumber": message_data.conversation.contact.phone_number,
-        "conversationId": message_data.conversation.id,
-        "phoneNumberId": message_data.conversation.phone_number.id,
-        "phoneNumber": message_data.conversation.phone_number.number,
-        "phoneNumberType": message_data.conversation.phone_number.type,
-        "attachments": attachments,
-    }
-    
-    # Call the Convex mutation
-    result = client.mutation("messages:storeMessage", mutation_args)
-    
-    return result

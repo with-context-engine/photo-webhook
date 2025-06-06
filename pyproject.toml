@@ -8,6 +8,7 @@ authors = [
     { name = "Ajay Bhargava", email = "bhargava.ajay@gmail.com" }
 ]
 dependencies = [
+    "baml-py>=0.89.0",
     "convex>=0.7.0",
     "fastapi>=0.115.12",
     "modal>=1.0.2",
